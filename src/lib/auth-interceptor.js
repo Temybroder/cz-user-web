@@ -47,7 +47,7 @@ export const proactiveTokenRefresh = async () => {
 
       // Call refresh token endpoint - FIXED: Use correct backend endpoint
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/user/auth/refresh-token`,
+        `${process.env.NEXT_PUBLIC_API_URL || "https://cz-api-server.onrender.com"}/api/user/auth/refresh-token`,
         {
           method: "POST",
           headers: {
@@ -140,7 +140,7 @@ export const authenticatedFetch = async (url, options = {}) => {
 
       // Call refresh token endpoint - FIXED: Use correct backend endpoint
       const refreshResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/user/auth/refresh-token`,
+        `${process.env.NEXT_PUBLIC_API_URL || "https://cz-api-server.onrender.com"}/api/user/auth/refresh-token`,
         {
           method: "POST",
           headers: {

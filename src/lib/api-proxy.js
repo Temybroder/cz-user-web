@@ -1,5 +1,5 @@
 // Utility functions for API proxy operations
-const EXTERNAL_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+const EXTERNAL_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://cz-api-server.onrender.com"
 import { NextResponse } from "next/server"
 
 /**
