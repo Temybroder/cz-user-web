@@ -5,7 +5,7 @@ import { authenticatedFetch, proactiveTokenRefresh } from "./auth-interceptor"
 import { authStorage } from "./auth-storage"
 
 // Base API URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://cz-api-server.onrender.com"
 
 /**
  * Helper function for making authenticated API requests
