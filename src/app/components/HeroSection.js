@@ -1,6 +1,7 @@
 
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { ShoppingCart, Zap, Clock, Package } from "lucide-react";
 
 export default function HeroSection() {
@@ -32,14 +33,22 @@ export default function HeroSection() {
 
             {/* CTA Buttons */}
             <div className="flex flex-wrap gap-4 mt-8">
-              <Button className="bg-red-600 hover:bg-red-700 text-white px-8 py-6 rounded-xl text-lg shadow-lg hover:shadow-red-200 transition-all">
+                 <Link href="/home">
+                  <Button className="bg-red-600 hover:bg-red-700 text-white px-8 py-6 rounded-xl text-lg shadow-lg hover:shadow-red-200 transition-all">
+                    <ShoppingCart className="mr-2 h-6 w-6" />
+                    Order Now
+                  </Button>
+                </Link>
+              {/* <Button className="bg-red-600 hover:bg-red-700 text-white px-8 py-6 rounded-xl text-lg shadow-lg hover:shadow-red-200 transition-all">
                 <ShoppingCart className="mr-2 h-6 w-6" />
                 Order Now
-              </Button>
+              </Button> */}
+              <Link href="/partners">
               <Button variant="outline" className="border-2 border-gray-200 bg-white/80 hover:bg-white text-gray-600 px-8 py-6 rounded-xl text-lg shadow-sm hover:shadow-md">
                 <Package className="mr-2 h-6 w-6" />
                 Become a Partner
               </Button>
+              </Link>
             </div>
 
             {/* Stats */}

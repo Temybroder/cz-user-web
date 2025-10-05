@@ -1508,6 +1508,75 @@ export const paymentAPI = {
   verifyPayment: async (reference) => {
     return fetchAPI(`/payment/verify/${reference}`)
   },
+
+  /**
+   * Process payment and subscribe (for subscription checkout)
+   * @param {Object} subscriptionData - Subscription payment data
+   * @returns {Promise<Object>} Payment processing response
+   */
+  processPayAndSubscribe: async (subscriptionData) => {
+    console.log("Processing subscription payment:", subscriptionData)
+    try {
+      const response = await fetchAPI("/api/user/payment/init-payment-and-subscription", {
+        method: "POST",
+        body: JSON.stringify(subscriptionData),
+      })
+
+      return {
+        success: true,
+        ...response,
+      }
+    } catch (error) {
+      console.error("Subscription payment processing failed:", error)
+      return {
+        success: false,
+        message: error.message || "Subscription payment processing failed",
+      }
+    }
+  },
+
+  /**
+   * Initialize payment and order (for single order checkout)
+   * @param {Object} orderData - Order data
+   * @returns {Promise<Object>} Payment processing response
+   */
+  initializePaymentAndOrder: async (orderData) => {
+    console.log("Initializing payment and order:", orderData)
+    try {
+      const response = await fetchAPI("/api/user/payment/init-payment-and-order", {
+        method: "POST",
+        body: JSON.stringify(orderData),
+      })
+
+      return {
+        success: true,
+        ...response,
+      }
+    } catch (error) {
+      console.error("Payment and order initialization failed:", error)
+      return {
+        success: false,
+        message: error.message || "Payment and order initialization failed",
+      }
+    }
+  },
+
+  /**
+   * Get user subscriptions
+   * @returns {Promise<Array>} List of user subscriptions
+   */
+  getUserSubscriptions: async () => {
+    console.log("Fetching user subscriptions")
+    try {
+      const response = await fetchAPI("/api/user/payment/subscriptions", {
+        method: "GET",
+      })
+      return response
+    } catch (error) {
+      console.error("Failed to fetch user subscriptions:", error)
+      throw error
+    }
+  },
 }
 
 // Meal plan API calls

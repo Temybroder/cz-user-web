@@ -148,9 +148,6 @@ export default function Footer() {
               <Link href="/cookies" className="text-white/60 hover:text-red-500 transition-colors">
                 Cookie Policy
               </Link>
-              <Link href="/sitemap" className="text-white/60 hover:text-red-500 transition-colors">
-                Sitemap
-              </Link>
             </div>
           </div>
         </div>

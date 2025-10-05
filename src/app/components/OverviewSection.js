@@ -11,7 +11,7 @@ const cards = [
     text: "Discover top restaurants and vendors near you with instant delivery in minutes",
     image: "/images/app-screen-customers.png",
     color: "bg-red-50",
-    cta: "Explore Apps"
+    cta: "Explore"
   },
   {
     title: "For Partners",
@@ -19,7 +19,7 @@ const cards = [
     text: "Expand your business with smart tools for menu management and multi-branch operations",
     image: "/images/app-screen-partners.png",
     color: "bg-amber-50",
-    cta: "Join Partners"
+    cta: "Become a Partner"
   },
   {
     title: "For Riders",

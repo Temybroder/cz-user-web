@@ -120,53 +120,68 @@ export default function CheckoutPage() {
         }
       }
 
+      // Prepare order data for backend
+      const userId = user.userId || user._id
+      const paymentMode = selectedPaymentMethod.type === "wallet" ? 2 : 1
+
+      const orderData = {
+        customerId: userId,
+        isPickup: isPickup,
+        isGift: isGift,
+        giftDetails: isGift ? giftDetails : undefined,
+        partnerBusinessBranchId: cart.items[0]?.vendorId || null,
+        orderSubTotal: subtotal,
+        orderBody: cart.items,
+        totalAmount: total,
+        deliveryAddress: isPickup ? null : selectedAddress,
+        noteToRider: "",
+        orderType: "single",
+        items: cart.items.map((item) => ({
+          productId: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          options: item.options || {}
+        })),
+        deliveryFee: deliveryFee,
+        serviceFee: serviceFee,
+        paymentMode: paymentMode,
+        currency: "NGN"
+      }
+
+      console.log("Sending order request:", orderData)
+
       // Process payment through backend
-      const paymentResult = await paymentAPI.initializePayment({
-        amount: total,
-        paymentMethod: selectedPaymentMethod.type,
-        paymentMethodId: selectedPaymentMethod.id,
-        currency: "NGN",
-        metadata: {
-          orderId: `order_${Date.now()}`,
-          userId: user.userId || user._id,
-          items: cart.items.map((item) => ({
-            productId: item.id,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-        },
-      })
+      const paymentResult = await paymentAPI.initializePaymentAndOrder(orderData)
 
       if (paymentResult.success) {
-        // Create order after successful payment
-        await orderAPI.createOrder({
-          items: cart.items.map((item) => ({
-            productId: item.id,
-            quantity: item.quantity,
-            options: item.options,
-            price: item.price,
-          })),
-          deliveryAddressId: isPickup ? null : selectedAddress?.id,
-          isPickup,
-          isGift,
-          giftDetails,
-          paymentMethodId: selectedPaymentMethod.id,
-          paymentId: paymentResult.paymentId,
-          totalAmount: total,
-          subtotal,
-          deliveryFee,
-          serviceFee,
-        })
+        // Check payment mode
+        if (paymentMode === 1) {
+          // Card payment - redirect to Paystack
+          if (paymentResult.data?.authorization_url) {
+            console.log("Redirecting to Paystack:", paymentResult.data.authorization_url)
+            window.location.href = paymentResult.data.authorization_url
+          } else {
+            throw new Error("Payment gateway URL not received")
+          }
+        } else if (paymentMode === 2) {
+          // Wallet payment - order created successfully
+          console.log("Wallet payment successful")
 
-        // Clear cart
-        await clearCart()
+          // Clear cart
+          await clearCart()
 
-        // Show success modal
-        setIsPaymentSuccessModalOpen(true)
+          // Show success modal
+          setIsPaymentSuccessModalOpen(true)
+        }
       } else {
         // Handle payment failure
-        setPaymentError(paymentResult.message || "Payment failed. Please try again.")
-        setIsPaymentFailureModalOpen(true)
+        const errorMsg = paymentResult.message || "Payment failed. Please try again."
+        if (errorMsg.includes("Insufficient wallet balance") || errorMsg.includes("insufficient balance")) {
+          setIsInsufficientBalanceModalOpen(true)
+        } else {
+          setPaymentError(errorMsg)
+          setIsPaymentFailureModalOpen(true)
+        }
       }
     } catch (error) {
       console.error("Failed to place order:", error)
