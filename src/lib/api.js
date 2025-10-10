@@ -5,7 +5,7 @@ import { authenticatedFetch, proactiveTokenRefresh } from "./auth-interceptor"
 import { authStorage } from "./auth-storage"
 
 // Base API URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://cz-api-server.onrender.com"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000" // "https://cz-api-server.onrender.com"
 
 /**
  * Helper function for making authenticated API requests
@@ -1054,7 +1054,7 @@ export const cartAPI = {
    */
   updateCartItem: async (itemId, updateData) => {
     return fetchAPI(`/api/user/order/upd-cart/${itemId}`, {
-      method: "PUT",
+      method: "PATCH",
       body: JSON.stringify(updateData),
     })
   },
@@ -1072,11 +1072,12 @@ export const cartAPI = {
 
   /**
    * Clear cart
+   * @param {string} userId - User ID
    * @returns {Promise<Object>} Empty cart
    */
-  clearCart: async () => {
-    return fetchAPI("/cart/clear", {
-      method: "POST",
+  clearCart: async (userId) => {
+    return fetchAPI(`/api/user/order/empty-cart/${userId}`, {
+      method: "DELETE",
     })
   },
 
@@ -1543,15 +1544,38 @@ export const paymentAPI = {
   initializePaymentAndOrder: async (orderData) => {
     console.log("Initializing payment and order:", orderData)
     try {
-      const response = await fetchAPI("/api/user/payment/init-payment-and-order", {
+      // Proactively refresh token if needed
+      await proactiveTokenRefresh()
+
+      // Use authenticatedFetch to properly handle tokens
+      const url = `${process.env.NEXT_PUBLIC_API_URL || "https://cz-api-server.onrender.com"}/api/user/payment/init-payment-and-order`
+
+      const response = await authenticatedFetch(url, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(orderData),
       })
 
-      return {
-        success: true,
-        ...response,
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({
+          message: "Payment request failed",
+          success: false,
+        }))
+        console.error("Payment API error:", error)
+        return {
+          success: false,
+          message: error.message || `HTTP ${response.status}`,
+        }
       }
+
+      const data = await response.json()
+      console.log("Payment API full response:", data)
+
+      // Return the complete response including success flag
+      return data
+
     } catch (error) {
       console.error("Payment and order initialization failed:", error)
       return {

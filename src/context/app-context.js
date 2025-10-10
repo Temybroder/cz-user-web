@@ -199,8 +199,17 @@ export function AppProvider({ children }) {
         setCart({
           items: cartData.items || [],
           totalAmount: cartData.totalAmount || 0,
-          totalItems: cartData.items ? cartData.items.length : 0,
+          totalItems: cartData.totalItems || 0,
         })
+
+        // Sync to localStorage
+        if (typeof window !== 'undefined' && cartData) {
+          localStorage.setItem('cart', JSON.stringify({
+            items: cartData.items || [],
+            totalAmount: cartData.totalAmount || 0,
+            totalItems: cartData.totalItems || 0,
+          }))
+        }
       } catch (error) {
         // 404 is expected for new users without a cart - not an error
         if (error.message?.includes("Cart not found") || error.message?.includes("404")) {
@@ -395,53 +404,75 @@ export function AppProvider({ children }) {
 
         console.log("Adding to cart:", { product, quantity, options })
 
-        // For now, we'll use local state management since the API might not be fully implemented
-        // Create a cart item
-        const cartItem = {
-          id: `${product.id}_${Date.now()}`, // Unique ID for cart item
-          productId: product.id,
-          name: product.name,
-          description: product.description,
-          price: product.price,
-          quantity: quantity,
-          options: options,
-          imageUrl: product.imageUrl,
-          vendorId: product.vendorId,
+        // Extract vendorId from various possible field names
+        const vendorId = product.vendorId ||
+                         product.sellerId ||
+                         product.seller?._id ||
+                         product.seller?.id ||
+                         product.partnerBusinessBranchId ||
+                         product.partnerBusinessBranch?._id ||
+                         product.partnerBusinessBranch?.id ||
+                         product.vendor?.id ||
+                         product.vendor?._id
+
+        if (!vendorId) {
+          console.error("Product object:", product)
+          throw new Error("Product does not have a valid vendor ID. Please contact support.")
         }
 
-        // Update cart state
-        setCart((prevCart) => {
-          const existingItemIndex = prevCart.items.findIndex(
-            (item) => item.productId === product.id && JSON.stringify(item.options) === JSON.stringify(options),
-          )
+        // Prepare cart item payload for API
+        const cartItemPayload = {
+          productId: product.id || product._id,
+          quantity: quantity,
+          vendorId: vendorId,
+          options: {
+            customizations: options.customizations || [],
+            basePack: options.basePack || [],
+            typePack: options.typePack || []
+          }
+        }
 
-          let updatedItems
-          if (existingItemIndex >= 0) {
-            // Update existing item quantity
-            updatedItems = prevCart.items.map((item, index) =>
-              index === existingItemIndex ? { ...item, quantity: item.quantity + quantity } : item,
-            )
-          } else {
-            // Add new item
-            updatedItems = [...prevCart.items, cartItem]
+        console.log("Cart payload being sent:", cartItemPayload)
+
+        // Call API to add item to cart on server
+        const response = await cartAPI.addToCart(cartItemPayload, user.userId)
+        console.log("API response:", response)
+
+        // Update local cart state from API response
+        if (response && response.cart) {
+          const apiCart = response.cart
+
+          // Transform API cart to app state format
+          const formattedCart = {
+            items: (apiCart.cartItems || []).map(item => ({
+              id: item._id?.toString() || `${item.cartItemId}_${Date.now()}`,
+              productId: item.cartItemId?.toString() || item.cartItemId,
+              name: item.name,
+              description: product.description || '',
+              price: item.price,
+              quantity: item.quantity,
+              imageUrl: product.imageUrl || '',
+              customizations: item.customizations || [],
+              basePack: item.basePack || [],
+              typePack: item.typePack || [],
+              vendorId: item.seller?.toString() || product.vendorId,
+              options: {
+                customizations: item.customizations || [],
+                basePack: item.basePack || [],
+                typePack: item.typePack || []
+              }
+            })),
+            totalAmount: (apiCart.cartItems || []).reduce((sum, item) => sum + (item.totalAmount || 0), 0),
+            totalItems: (apiCart.cartItems || []).reduce((sum, item) => sum + (item.quantity || 0), 0)
           }
 
-          const totalAmount = updatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
-          const totalItems = updatedItems.reduce((sum, item) => sum + item.quantity, 0)
+          setCart(formattedCart)
 
-          const newCart = {
-            items: updatedItems,
-            totalAmount,
-            totalItems,
-          }
-
-          // Persist to localStorage
+          // Persist to localStorage for offline access
           if (typeof window !== 'undefined') {
-            localStorage.setItem('cart', JSON.stringify(newCart))
+            localStorage.setItem('cart', JSON.stringify(formattedCart))
           }
-
-          return newCart
-        })
+        }
 
         console.log("Item added to cart successfully")
         return { success: true }
@@ -545,7 +576,8 @@ export function AppProvider({ children }) {
           throw new Error("Please login to modify your cart")
         }
 
-        await cartAPI.clearCart()
+        const userId = user._id || user.userId
+        await cartAPI.clearCart(userId)
         setCart({ items: [], totalAmount: 0, totalItems: 0 })
       } catch (error) {
         console.error("Clear cart failed:", error)

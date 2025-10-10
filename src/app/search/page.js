@@ -96,9 +96,15 @@ export default function SearchResultsPage() {
       id: product._id || product.id,
       name: product.name,
       price: product.price,
-      image: product.imageUrl || product.image,
-      quantity: 1,
-    })
+      imageUrl: product.imageUrl || product.image,
+      // Pass all possible vendor ID fields from product
+      vendorId: product.vendorId,
+      sellerId: product.sellerId,
+      seller: product.seller,
+      partnerBusinessBranchId: product.partnerBusinessBranchId,
+      partnerBusinessBranch: product.partnerBusinessBranch,
+      vendor: product.vendor
+    }, 1)
   }
 
   const handleProductClick = (product) => {

@@ -13,13 +13,38 @@ import { ShoppingCart, Package, CheckCircle, Trash2, Plus, Minus, Clock, MapPin 
 import AnimatedLoader from "@/app/components/ui/animated-loader"
 import ProtectedRoute from "@/app/components/protected-route"
 
+// Helper function to get valid image URL
+const getValidImageUrl = (imageUrl, fallbackName = "item") => {
+  if (!imageUrl) {
+    return `/placeholder.svg?height=80&width=80&query=${encodeURIComponent(fallbackName)}`
+  }
+
+  // Check if it's a Google Drive sharing link
+  if (imageUrl.includes('drive.google.com/file/d/')) {
+    // Try to extract file ID and convert to direct link
+    const match = imageUrl.match(/\/file\/d\/([^/]+)/)
+    if (match && match[1]) {
+      return `https://drive.google.com/uc?export=view&id=${match[1]}`
+    }
+  }
+
+  // Check if it's already a valid image URL
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://') || imageUrl.startsWith('/')) {
+    return imageUrl
+  }
+
+  // Fallback to placeholder
+  return `/placeholder.svg?height=80&width=80&query=${encodeURIComponent(fallbackName)}`
+}
+
 export default function OrdersPage() {
   const router = useRouter()
-  const { user, cart, updateCartItem, removeFromCart } = useAppContext()
+  const { user, cart, updateCartItem, removeFromCart, clearCart } = useAppContext()
   const [activeTab, setActiveTab] = useState("cart")
   const [ongoingOrders, setOngoingOrders] = useState([])
   const [completedOrders, setCompletedOrders] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isClearingCart, setIsClearingCart] = useState(false)
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -27,14 +52,31 @@ export default function OrdersPage() {
 
       try {
         setIsLoading(true)
-        const userId = user._id
-        const orders = await orderAPI.getOrders(userId)
+        const userId = user._id || user.userId
+        const response = await orderAPI.getOrders(userId)
+
+        // Handle different response structures - ensure orders is an array
+        let orders = []
+        if (Array.isArray(response)) {
+          orders = response
+        } else if (response?.orders && Array.isArray(response.orders)) {
+          orders = response.orders
+        } else if (response?.data && Array.isArray(response.data)) {
+          orders = response.data
+        } else if (response?.data?.orders && Array.isArray(response.data.orders)) {
+          orders = response.data.orders
+        }
+
+        console.log("Fetched orders:", orders)
 
         // Filter orders based on status
         setOngoingOrders(orders.filter((order) => order.orderStatus === "ongoing" || order.orderStatus === "pending"))
         setCompletedOrders(orders.filter((order) => order.orderStatus === "completed"))
       } catch (error) {
         console.error("Failed to fetch orders:", error)
+        // Set empty arrays on error
+        setOngoingOrders([])
+        setCompletedOrders([])
       } finally {
         setIsLoading(false)
       }
@@ -64,6 +106,22 @@ export default function OrdersPage() {
     router.push("/checkout")
   }
 
+  const handleClearCart = async () => {
+    if (!window.confirm("Are you sure you want to clear all items from your cart?")) {
+      return
+    }
+
+    try {
+      setIsClearingCart(true)
+      await clearCart()
+    } catch (error) {
+      console.error("Failed to clear cart:", error)
+      alert("Failed to clear cart. Please try again.")
+    } finally {
+      setIsClearingCart(false)
+    }
+  }
+
   const renderCartTab = () => {
     if (cart.items.length === 0) {
       return (
@@ -91,6 +149,15 @@ export default function OrdersPage() {
             <h2 className="text-2xl font-bold">
               {cart.totalItems} Order{cart.totalItems !== 1 ? "s" : ""} from Vendors
             </h2>
+            <Button
+              variant="outline"
+              className="text-red-500 border-red-500 hover:bg-red-50 hover:border-red-600"
+              onClick={handleClearCart}
+              disabled={isClearingCart}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              {isClearingCart ? "Clearing..." : "Clear Cart"}
+            </Button>
           </div>
 
           {cart.items.map((item) => (
@@ -99,7 +166,7 @@ export default function OrdersPage() {
                 <div className="flex items-center p-6">
                   <div className="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
                     <Image
-                      src={item.imageUrl || `/placeholder.svg?height=80&width=80&query=food ${item.name}`}
+                      src={getValidImageUrl(item.imageUrl, item.name)}
                       alt={item.name}
                       fill
                       className="object-cover"
@@ -172,7 +239,11 @@ export default function OrdersPage() {
                   <h3 className="font-medium">Send as a gift</h3>
                   <p className="text-sm text-gray-500">Add their details to the delivery information.</p>
                 </div>
-                <Button variant="outline" className="text-red-500 border-red-500 hover:bg-red-50">
+                <Button
+                  variant="outline"
+                  className="text-red-500 border-red-500 hover:bg-red-50"
+                  onClick={handleCheckout}
+                >
                   Add
                 </Button>
               </div>
@@ -190,7 +261,11 @@ export default function OrdersPage() {
                   <h3 className="font-medium">Delivery address</h3>
                   <p className="text-sm text-gray-500">Behind Ikeja city mall, Opic roundabout, Ikeja, Lagos State.</p>
                 </div>
-                <Button variant="outline" className="text-red-500 border-red-500 hover:bg-red-50">
+                <Button
+                  variant="outline"
+                  className="text-red-500 border-red-500 hover:bg-red-50"
+                  onClick={handleCheckout}
+                >
                   Change
                 </Button>
               </div>
@@ -208,7 +283,11 @@ export default function OrdersPage() {
                   <h3 className="font-medium">Payment Method</h3>
                   <p className="text-sm text-gray-500">How would you like to pay</p>
                 </div>
-                <Button variant="outline" className="text-red-500 border-red-500 hover:bg-red-50">
+                <Button
+                  variant="outline"
+                  className="text-red-500 border-red-500 hover:bg-red-50"
+                  onClick={handleCheckout}
+                >
                   Choose
                 </Button>
               </div>
@@ -255,7 +334,7 @@ export default function OrdersPage() {
                 className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 rounded-lg"
                 onClick={handleCheckout}
               >
-                Place Order
+                Proceed to Checkout
               </Button>
             </CardContent>
           </Card>

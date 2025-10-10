@@ -7,7 +7,7 @@ import { X, AlertCircle, RotateCcw } from "lucide-react"
 export default function PaymentFailureModal({ isOpen, onClose, onRetry, errorMessage }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-white rounded-3xl border-0 shadow-2xl">
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-white rounded-3xl border-0 shadow-2xl [&>button]:hidden">
         <DialogTitle className="sr-only">Order not Confirmed</DialogTitle>
 
         {/* Header */}
@@ -15,7 +15,7 @@ export default function PaymentFailureModal({ isOpen, onClose, onRetry, errorMes
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-4 top-4 w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+            className="absolute right-4 top-4 w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors z-10"
             onClick={onClose}
           >
             <X className="w-5 h-5" />

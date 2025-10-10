@@ -103,13 +103,19 @@ export default function ProductDetailPage() {
 
     try {
       await addToCart({
-        id: product.id,
+        id: product.id || product._id,
         name: product.name,
         price: product.price,
         imageUrl: getValidImageUrl(product.imageUrl, product.productType),
         description: product.description,
-        quantity: quantity
-      })
+        // Pass all possible vendor ID fields from product
+        vendorId: product.vendorId,
+        sellerId: product.sellerId,
+        seller: product.seller,
+        partnerBusinessBranchId: product.partnerBusinessBranchId,
+        partnerBusinessBranch: product.partnerBusinessBranch,
+        vendor: product.vendor
+      }, quantity)
       // Show success message
       addToast("Product Added to cart!", "success", 3000)
     } catch (error) {

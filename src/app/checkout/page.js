@@ -124,6 +124,9 @@ export default function CheckoutPage() {
       const userId = user.userId || user._id
       const paymentMode = selectedPaymentMethod.type === "wallet" ? 2 : 1
 
+      console.log("Cart items before order:", cart.items)
+      console.log("First cart item structure:", cart.items[0])
+
       const orderData = {
         customerId: userId,
         isPickup: isPickup,
@@ -137,7 +140,7 @@ export default function CheckoutPage() {
         noteToRider: "",
         orderType: "single",
         items: cart.items.map((item) => ({
-          productId: item.id,
+          productId: item.productId || item.id,  // Use actual product ID, fallback to cart item ID
           quantity: item.quantity,
           price: item.price,
           options: item.options || {}
@@ -148,7 +151,8 @@ export default function CheckoutPage() {
         currency: "NGN"
       }
 
-      console.log("Sending order request:", orderData)
+      console.log("Prepared order data:", orderData)
+      console.log("Items array in order:", orderData.items)
 
       // Process payment through backend
       const paymentResult = await paymentAPI.initializePaymentAndOrder(orderData)

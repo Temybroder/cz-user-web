@@ -65,13 +65,13 @@ export default function PaymentMethodModal({ isOpen, onClose, onSelectPaymentMet
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-white rounded-3xl border-0 shadow-2xl">
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-white rounded-3xl border-0 shadow-2xl [&>button]:hidden">
         {/* Header */}
         <div className="relative p-6 pb-4">
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-4 top-4 w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+            className="absolute right-4 top-4 w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors z-10"
             onClick={onClose}
           >
             <X className="w-5 h-5" />
